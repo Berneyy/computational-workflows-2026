@@ -6,13 +6,157 @@ params {
 
 process SAYHELLO {
     debug true
+    
+    output:
+    stdout
+
+    script:
+    """
+    echo "Hello World!"
+    """
 }
 
+process SAYHELLO_PYTHON {
+    debug true
 
+    script:
+    """
+    #!/usr/bin/python3
+    print('Hello World!')
+    """
+}
+
+process SAYHELLO_PARAM {
+    debug true
+
+    input:
+    val greeting_ch
+
+    script:
+    """
+    echo "$greeting_ch"
+    """
+}
+
+process SAYHELLO_FILE {
+    debug true
+
+    publishDir  "results", mode: "copy"
+
+    input:
+    val greeting_ch
+
+    output:
+    path "hello_file.txt"
+
+    script:
+    """
+    echo "$greeting_ch" > hello_file.txt
+    """
+}
+
+process UPPERCASE {
+    debug true
+
+    publishDir  "results", mode: "copy"
+
+    input:
+    val greeting_ch
+
+    output:
+    path "UPPERCASE_file.txt"
+
+    script:
+    """
+    upper='$greeting_ch'
+    echo "\${upper^^}" > UPPERCASE_file.txt
+    """
+}
+
+process PRINTUPPER {
+    debug true
+
+    input:
+    path upper_file
+
+    output:
+    stdout
+
+    script:
+    """
+    cat $upper_file
+    """
+}
+
+process COMPRESSUPPER {
+    debug true
+
+    publishDir  "results", mode: "copy"
+
+    input:
+    path upper_file
+    val zip
+
+    output:
+    path '*.zip', optional: true, emit: zip_file
+    path '*.gz', optional: true,  emit: gzip_file
+    path '*.bz2', optional: true,  emit: bzip2_file
+
+    script:
+    """
+    if [[ $zip == "zip" ]]; then
+        zip "\$(basename "$upper_file" .txt).zip" $upper_file
+    elif [[ $zip == "gzip" ]]; then
+        gzip -c "$upper_file" > UPPERCASE_file.gz
+    elif [[ $zip == "bzip2" ]]; then
+        bzip2 -c "$upper_file" > UPPERCASE_file.bz2
+    fi
+    """
+}
+
+process COMPRESSUPPER_ALL {
+    debug true
+
+    publishDir  "results", mode: "copy"
+
+    input:
+    path upper_file
+
+    output:
+    path "UPPERCASE_file.zip", emit: zip_file
+    path "UPPERCASE_file.bz2", emit: bzip2_file
+    path "UPPERCASE_file.gz", emit: gzip_file
+
+    script:
+    """
+    zip "\$(basename "$upper_file" .txt).zip" $upper_file
+    gzip -c "$upper_file" > UPPERCASE_file.gz
+    bzip2 -c "$upper_file" > UPPERCASE_file.bz2
+    """
+}
+
+process WRITETOFILE {
+    debug true
+
+    publishDir  "results", mode: "copy"
+
+    input:
+    val list
+
+    output:
+    path "names.tsv"
+
+    script:
+    def entries = list.join('')
+    """
+    echo "name\ttitle" > names.tsv
+    echo "$entries" >> names.tsv
+    """
+}
 
 workflow {
 
-    // Task 1 - create a process that says Hello World! (add debug true to the process right after initializing to be sable to print the output to the console)
+    // Task 1 - create a process that says Hello World! (add debug true to the process right after initializing to be able to print the output to the console)
     if (params.step == 1) {
         SAYHELLO()
     }
@@ -53,12 +197,24 @@ workflow {
     //          Print out the path to the zipped file in the console
     if (params.step == 7) {
         greeting_ch = Channel.of("Hello world!")
+        mid_ch = UPPERCASE(greeting_ch)
+        out_ch = COMPRESSUPPER(mid_ch, params.zip)
+
+        COMPRESSUPPER.out.zip_file.view()
+        COMPRESSUPPER.out.bzip2_file.view()
+        COMPRESSUPPER.out.gzip_file.view()
     }
 
     // Task 8 - Create a process that zips the file created in the UPPERCASE process in "zip", "gzip" AND "bzip2" format. Print out the paths to the zipped files in the console
 
     if (params.step == 8) {
         greeting_ch = Channel.of("Hello world!")
+        out_ch = UPPERCASE(greeting_ch)
+        COMPRESSUPPER_ALL(out_ch)
+
+        COMPRESSUPPER_ALL.out.zip_file.view()
+        COMPRESSUPPER_ALL.out.bzip2_file.view()
+        COMPRESSUPPER_ALL.out.gzip_file.view()
     }
 
     // Task 9 - Create a process that reads in a list of names and titles from a channel and writes them to a file.
@@ -75,7 +231,7 @@ workflow {
             ['name': 'Dobby', 'title': 'hero'],
         )
 
-        in_ch
+        in_ch.map { rows -> "${rows.name}\t${rows.title}\n" }. collect()
             | WRITETOFILE
             // continue here
     }

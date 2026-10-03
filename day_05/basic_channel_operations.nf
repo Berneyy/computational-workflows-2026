@@ -9,7 +9,8 @@ workflow{
 
     if (params.step == 1) {
         in_ch = channel.of(1,2,3)
-
+        in_ch.first()
+             .view()
     }
 
     // Task 2 - Extract the last item from the channel
@@ -17,7 +18,8 @@ workflow{
     if (params.step == 2) {
 
         in_ch = channel.of(1,2,3)
-
+        in_ch.last()
+             .view()
     }
 
     // Task 3 - Use an operator to extract the first two items from the channel
@@ -25,8 +27,8 @@ workflow{
     if (params.step == 3) {
 
         in_ch = channel.of(1,2,3)
-
-
+        in_ch.take(2)
+             .view()
     }
 
     // Task 4 - Return the squared values of the channel
@@ -34,8 +36,8 @@ workflow{
     if (params.step == 4) {
 
         in_ch = channel.of(2,3,4)
-
-
+        in_ch.map {row -> row**2}
+             .view()
     }
 
     // Task 5 - Remember the previous task where you squared the values of the channel. Now, extract the first two items from the squared channel
@@ -43,8 +45,9 @@ workflow{
     if (params.step == 5) {
 
         in_ch = channel.of(2,3,4)
-        in_ch.map { it -> it * it }.take(2).view()
-        
+        in_ch.map { it -> it * it }
+             .take(2)
+             .view()
     }
 
     // Task 6 - Remember when you used bash to reverse the output? Try to use map and Groovy to reverse the output
@@ -52,7 +55,8 @@ workflow{
     if (params.step == 6) {
         
         in_ch = channel.of('Taylor', 'Swift')
-
+        in_ch.map {name -> name.reverse()}
+             .view()
     }
 
     // Task 7 - Use fromPath to include all fastq files in the "files_dir" directory, then use map to return a pair containing the file name and the file path (Hint: include groovy code)
@@ -60,8 +64,8 @@ workflow{
     if (params.step == 7) {
 
         in_ch = channel.fromPath('files_dir/*.fq')
-
-        
+        in_ch.map {file -> [file.baseName, file]}    
+             .view()  
     }
 
     // Task 8 - Combine the items from the two channels into a single channel
@@ -70,9 +74,8 @@ workflow{
 
         ch_1 = channel.of(1,2,3)
         ch_2 = channel.of(4,5,6)
-        out_ch = channel.of("a", "b", "c")
-
-
+        ch_1.mix(ch_2)
+            .view()
     }
 
     // Task 9 - Flatten the channel
@@ -80,8 +83,8 @@ workflow{
     if (params.step == 9) {
 
         in_ch = channel.of([1,2,3], [4,5,6])
-
-
+        in_ch.flatMap {it}
+             .view()
     }
 
     // Task 10 - Collect the items of a channel into a list. What kind of channel is the output channel (value)?
@@ -89,7 +92,7 @@ workflow{
     if (params.step == 10) {
 
         in_ch = channel.of(1,2,3)
-
+        print(in_ch.toList().getClass())
     }
     
 
@@ -102,7 +105,8 @@ workflow{
     if (params.step == 11) {
 
         in_ch = channel.of([1, 'V'], [3, 'M'], [2, 'O'], [1, 'f'], [3, 'G'], [1, 'B'], [2, 'L'], [2, 'E'], [3, '33'])
-
+        in_ch.groupTuple()
+             .view()
     }
 
     // Task 12 - Create a channel that joins the input to the output channel. What do you notice
@@ -111,7 +115,8 @@ workflow{
 
         left_ch = channel.of([1, 'V'], [3, 'M'], [2, 'O'], [1, 'B'], [3, '33'])
         right_ch = channel.of([1, 'f'], [3, 'G'], [2, 'L'], [2, 'E'],)
-
+        left_ch.join(right_ch)
+               .view()
     }
 
     // Task 13 - Split the input channel into two channels, one of all the even numbers and the other of all the odd numbers. Write the output of each channel to a list
@@ -120,7 +125,8 @@ workflow{
     if (params.step == 13) {
 
         in_ch = channel.of(1,2,3,4,5,6,7,8,9,10)
-
+        in_ch.filter {it % 2 == 0}.toList().view {nums -> "even numbers: ${nums}"}
+        in_ch.filter {it % 2 == 1}.toList().view {nums -> "odd numbers : ${nums}"}
     }
 
     // Task 14 - Nextflow has the concept of maps. Write the names in the maps in this channel to a file called "names.txt". Each name should be on a new line. 
@@ -137,7 +143,12 @@ workflow{
             ['name': 'Hagrid', 'title': 'groundkeeper'],
             ['name': 'Dobby', 'title': 'hero'],
         )
-    
+        in_ch.map {rows -> "name,title\n$rows.name,$rows.title\n" }
+             .collectFile(
+                name: "names.txt",
+                storeDir: "results",
+                keepHeader: true
+             )
     }
 
 

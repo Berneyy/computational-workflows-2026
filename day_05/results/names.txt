@@ -1,0 +1,8 @@
+name,title
+Ron,student
+Hagrid,groundkeeper
+Dobby,hero
+Hermione,student
+Albus,headmaster
+Snape,teacher
+Harry,student
