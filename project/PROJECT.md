@@ -1,10 +1,10 @@
 # Fill out your Project Information
 
-Student1: \<name-1>
+Student1: Adrian Bernhardt
 
-Student2: \<name-2>
+Student2: Samuel Hehn
 
-Project Github url: \<github-url> 
+Project Github url: 'https://github.com/Sorodon/ut-computational-workflows-2026-project'
 
 
 # Next steps
